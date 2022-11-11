@@ -80,13 +80,13 @@ where T : Iterator<Item=char>
         if c == '\n' {
             let mut changed_pos = false;
             let mut changed_m = false;
-            let mut changed_g = false;
+            // let mut changed_g = false;
 
             for v in &variables_updates {
                 // changed_pos |= *v == 'X' || *v == 'Y' || *v == 'Z';
                 changed_pos |= *v == 'X' || *v == 'Y';
                 changed_m |= *v == 'M';
-                changed_g |= *v == 'G';
+                // changed_g |= *v == 'G';
             }
 
             if changed_m {

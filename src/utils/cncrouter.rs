@@ -4,7 +4,6 @@ pub struct CNCRouter {
     tools: Vec<Tool>,
     pos: Coordinate,
     tool_index: usize,
-    is_cutting: bool,
 }
 
 pub struct Tool {
@@ -33,7 +32,6 @@ impl From<Vec<Tool>> for CNCRouter {
             tools: tools,
             pos: Default::default(),
             tool_index: 0,
-            is_cutting: false,
         }
     }
 }
