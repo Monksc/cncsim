@@ -29,9 +29,12 @@ Then to create the .stl file and .png images we used this repo cncsim.
 
 A big use case is to see the step over value and how flat the floor is. You can also check to make sure it got to every place it can.
 
+Gcode below was created with [CamCam](https://github.com/Monksc/camcam) 
+
 ![Diamond created with camcam software](/outputfiles/camcamsign.png)
 
-![Square created with camcam software](/outputfiles/camcamsquare.stl)
+The gcode below was created with fusion 360.
+![Square created with camcam software](/outputfiles/fusionsign.png)
 
 Other software to view gcode is listed below
 
