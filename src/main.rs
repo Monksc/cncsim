@@ -48,6 +48,56 @@ fn get_temp_file(extension: &str) ->
     Ok((file, path))
 }
 
+fn get_tools() -> Vec<utils::cncrouter::Tool> {
+    let multiplier = 1.0;
+    vec![
+        // utils::cncrouter::Tool { // 1
+        //     radius: multiplier * 0.1,
+        //     length: 1.0,
+        // },
+        // utils::cncrouter::Tool { // 2
+        //     radius: multiplier * 0.25/2.0,
+        //     length: 1.0,
+        // },
+        // utils::cncrouter::Tool { // 3
+        //     radius: multiplier * 0.1/2.0,
+        //     length: 1.0,
+        // },
+
+        // For real
+        utils::cncrouter::Tool { // 1
+            radius: 0.0,
+            length: 1.0,
+        },
+        utils::cncrouter::Tool { // 2
+            // radius: multiplier * 0.000002/2.0,
+            radius: multiplier * 0.02/2.0,
+            length: 1.0,
+        },
+        utils::cncrouter::Tool { // 3
+            radius: multiplier * 0.125/2.0,
+            length: 1.0,
+        },
+        utils::cncrouter::Tool { // 4
+            radius: multiplier * 0.25/2.0,
+            length: 1.0,
+        },
+        utils::cncrouter::Tool { // 5
+            radius: multiplier * 0.0625/2.0,
+            length: 1.0,
+        },
+        utils::cncrouter::Tool { // 6
+            // radius: multiplier * 0.00002/2.0,
+            radius: multiplier * 0.02/2.0,
+            length: 1.0,
+        },
+        utils::cncrouter::Tool { // 7
+            radius: multiplier * 0.005/2.0,
+            length: 1.0,
+        },
+    ]
+}
+
 fn main() -> io::Result<()> {
 
     let args = Args::parse();
@@ -55,66 +105,50 @@ fn main() -> io::Result<()> {
     let contents = fs::read_to_string(args.input)
         .expect("Should have been able to read the file");
 
-    let (mut file, path) = get_temp_file(".scad")
-        .expect("Could not create temporary file.");
+    if false {
+        let (mut file, path) = get_temp_file(".scad")
+            .expect("Could not create temporary file.");
 
-    utils::tostl::to_scad(
-        args.fnvalue,
-        args.blockwidth,
-        args.blockheight,
-        vec![
-            utils::cncrouter::Tool {
-                radius: 0.25/2.0,
-                length: 1.0,
-            },
-            utils::cncrouter::Tool {
-                radius: 0.125/2.0,
-                length: 1.0,
-            },
-            utils::cncrouter::Tool {
-                radius: 0.0625/2.0,
-                length: 1.0,
-            },
-            utils::cncrouter::Tool {
-                radius: 0.02/2.0,
-                length: 1.0,
-            },
-            utils::cncrouter::Tool {
-                radius: 0.02/2.0,
-                length: 1.0,
-            },
-            utils::cncrouter::Tool {
-                radius: 0.005/2.0,
-                length: 1.0,
-            },
-            utils::cncrouter::Tool {
-                radius: 0.005/2.0,
-                length: 1.0,
-            },
-        ], &mut contents.chars(), &mut file)
-        .expect("Could not read template or write to temporary file.");
+        utils::tostl::to_scad(
+            args.fnvalue,
+            args.blockwidth,
+            args.blockheight,
+            get_tools(),
+            &mut contents.chars(), &mut file)
+            .expect("Could not read template or write to temporary file.");
 
-    let file_path = path.into_os_string()
-        .into_string()
-        .expect("Path could not be found.");
+        let file_path = path.into_os_string()
+            .into_string()
+            .expect("Path could not be found.");
 
-    println!("STL FILE: {}", file_path);
+        println!("STL FILE: {}", file_path);
 
-    let output = Command::new("/usr/bin/openscad")
-        .arg("-o")
-        .arg(args.output)
-        // .arg("--autocenter")
-        // .arg("--viewall")
-        .arg(format!("--imgsize={},{}", args.imgwidth, args.imgheight))
-        // .arg("--imgsize=16384,16384")
-        .arg(&file_path)
-        .output()
-        .expect("Failed to execute command");
+        let output = Command::new("/usr/bin/openscad")
+            .arg("-o")
+            .arg(args.output)
+            // .arg("--autocenter")
+            // .arg("--viewall")
+            .arg(format!("--imgsize={},{}", args.imgwidth, args.imgheight))
+            // .arg("--imgsize=16384,16384")
+            .arg(&file_path)
+            .output()
+            .expect("Failed to execute command");
 
-    let stdout = String::from_utf8(output.stdout).expect("Could not get stdout.");
-    let stderr = String::from_utf8(output.stderr).expect("Could not get stderr.");
-    println!("STDOUT:\n{}", stdout);
-    print!("STDERR:\n{}", stderr);
+        let stdout = String::from_utf8(output.stdout).expect("Could not get stdout.");
+        let stderr = String::from_utf8(output.stderr).expect("Could not get stderr.");
+        println!("STDOUT:\n{}", stdout);
+        print!("STDERR:\n{}", stderr);
+    } else {
+        let mut output = fs::File::create(args.output)?;
+        utils::toimage::to_png(
+            (args.imgwidth as u32, args.imgheight as u32),
+            (0.0, 0.0, 10.0, 10.0),
+            0.0,
+            get_tools(),
+            &mut contents.chars(),
+            &mut output,
+        );
+    }
 
     Ok(())
 }

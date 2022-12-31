@@ -9,3 +9,5 @@ edition = "2021"
 clap = { version = "3.2.17", features = ["derive"] }
 tempfile = "3.3.0"
 rand = "0.8.5"
+image = "0.23.14"
+algorithms = { path = "../algorithms_rust_lib/" }
