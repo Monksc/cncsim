@@ -10,9 +10,12 @@ pub fn to_scad<T, W : std::io::Write>(
     block_width: f64,
     block_height: f64,
     tools: Vec<cncrouter::Tool>,
+    cutting_box: ((f64, f64, f64), (f64, f64, f64)),
+    non_cutting_box: ((f64, f64, f64), (f64, f64, f64)),
+    safe_point: (f64, f64, f64),
     s: &mut T,
     writer: &mut W
-) -> std::io::Result<()>
+) -> std::io::Result<Vec<running_gcode::Warnings>>
 where T : Iterator<Item=char>
 {
     let contents = fs::read_to_string(TEMPLATE_FILE_PATH)
@@ -25,8 +28,11 @@ where T : Iterator<Item=char>
         block_width, block_height,
     )?;
 
-    running_gcode::draw_path(
+    let warnings = running_gcode::draw_path(
         tools,
+        cutting_box,
+        non_cutting_box,
+        safe_point,
         s,
         |p1, p2, length, radius| {
             writeln!(
@@ -41,7 +47,7 @@ where T : Iterator<Item=char>
 
     writeln!(writer, "{}", "}")?;
 
-    Ok(())
+    Ok(warnings)
 }
 
 

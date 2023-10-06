@@ -49,18 +49,18 @@ fn get_temp_file(extension: &str) ->
 }
 
 fn get_tools() -> Vec<utils::cncrouter::Tool> {
-    let multiplier = 1.0;
     vec![
+        // Test
         // utils::cncrouter::Tool { // 1
-        //     radius: multiplier * 0.1,
+        //     radius: 0.5 / 2.0,
         //     length: 1.0,
         // },
         // utils::cncrouter::Tool { // 2
-        //     radius: multiplier * 0.25/2.0,
+        //     radius: 0.05 / 2.0,
         //     length: 1.0,
         // },
         // utils::cncrouter::Tool { // 3
-        //     radius: multiplier * 0.1/2.0,
+        //     radius: 0.0,
         //     length: 1.0,
         // },
 
@@ -70,29 +70,27 @@ fn get_tools() -> Vec<utils::cncrouter::Tool> {
             length: 1.0,
         },
         utils::cncrouter::Tool { // 2
-            // radius: multiplier * 0.000002/2.0,
-            radius: multiplier * 0.02/2.0,
+            radius: 0.02/2.0,
             length: 1.0,
         },
         utils::cncrouter::Tool { // 3
-            radius: multiplier * 0.125/2.0,
+            radius: 0.125/2.0,
             length: 1.0,
         },
         utils::cncrouter::Tool { // 4
-            radius: multiplier * 0.25/2.0,
+            radius: 0.25/2.0,
             length: 1.0,
         },
         utils::cncrouter::Tool { // 5
-            radius: multiplier * 0.0625/2.0,
+            radius: 0.0625/2.0,
             length: 1.0,
         },
         utils::cncrouter::Tool { // 6
-            // radius: multiplier * 0.00002/2.0,
-            radius: multiplier * 0.02/2.0,
+            radius: 0.02/2.0,
             length: 1.0,
         },
         utils::cncrouter::Tool { // 7
-            radius: multiplier * 0.005/2.0,
+            radius: 0.005/2.0,
             length: 1.0,
         },
     ]
@@ -114,6 +112,8 @@ fn main() -> io::Result<()> {
             args.blockwidth,
             args.blockheight,
             get_tools(),
+            ((0.0, 0.0, -1.0), (13.0, 20.0, 5.0)),
+            ((0.0, 0.0, -1.0), (20.0, 20.0, 10.0)),
             &mut contents.chars(), &mut file)
             .expect("Could not read template or write to temporary file.");
 
@@ -142,9 +142,11 @@ fn main() -> io::Result<()> {
         let mut output = fs::File::create(args.output)?;
         utils::toimage::to_png(
             (args.imgwidth as u32, args.imgheight as u32),
-            (0.0, 0.0, 10.0, 10.0),
+            (0.0, 0.0, args.blockwidth, args.blockheight),
             0.0,
             get_tools(),
+            ((0.0, 0.0, -1.0), (13.0, 20.0, 5.0)),
+            ((0.0, 0.0, -1.0), (20.0, 20.0, 10.0)),
             &mut contents.chars(),
             &mut output,
         );

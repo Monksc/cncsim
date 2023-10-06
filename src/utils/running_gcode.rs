@@ -161,25 +161,95 @@ where T : Iterator<Item=char>
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum Warnings {
+    OutOfBoundsLowXAxis,
+    OutOfBoundsLowYAxis,
+    OutOfBoundsLowZAxis,
+    OutOfBoundsHighXAxis,
+    OutOfBoundsHighYAxis,
+    OutOfBoundsHighZAxis,
+    CuttingNotInBounds,
+}
+impl std::fmt::Display for Warnings {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Warnings::OutOfBoundsLowXAxis => write!(f, "X axis too low."),
+            Warnings::OutOfBoundsLowYAxis => write!(f, "Y axis too low."),
+            Warnings::OutOfBoundsLowZAxis => write!(f, "Z axis too low."),
+            Warnings::OutOfBoundsHighXAxis => write!(f, "X axis too high."),
+            Warnings::OutOfBoundsHighYAxis => write!(f, "Y axis too high."),
+            Warnings::OutOfBoundsHighZAxis => write!(f, "Z axis too high."),
+            Warnings::CuttingNotInBounds => write!(f, "You are cutting but not in bounds."),
+        }
+    }
+}
+impl Warnings {
+    fn raw_value(&self) -> usize {
+        match self {
+            Warnings::OutOfBoundsLowXAxis => 0,
+            Warnings::OutOfBoundsLowYAxis => 1,
+            Warnings::OutOfBoundsLowZAxis => 2,
+            Warnings::OutOfBoundsHighXAxis => 3,
+            Warnings::OutOfBoundsHighYAxis => 4,
+            Warnings::OutOfBoundsHighZAxis => 5,
+            Warnings::CuttingNotInBounds => 6,
+        }
+    }
+}
+
 pub fn draw_path<T, F: FnMut(Point, Point, f64, f64)>(
     tools: Vec<cncrouter::Tool>,
+    cutting_box: ((f64, f64, f64), (f64, f64, f64)),
+    non_cutting_box: ((f64, f64, f64), (f64, f64, f64)),
+    safe_point: (f64, f64, f64),
     s: &mut T,
     mut draw_line: F,
-)
+) -> Vec<Warnings>
 where T : Iterator<Item=char>
 {
+    let mut warnings = std::collections::HashSet::new();
 
     let mut cnc : cncrouter::CNCRouter = tools.into();
+    let give_warnings = move |bounds: ((f64, f64, f64), (f64, f64, f64)), cnc : &cncrouter::CNCRouter| -> Vec<Warnings> {
+        let mut warnings = Vec::new();
+
+        if cnc.get_pos().x < bounds.0.0 {
+            warnings.push(Warnings::OutOfBoundsLowXAxis);
+        }
+        if cnc.get_pos().y < bounds.0.1 {
+            warnings.push(Warnings::OutOfBoundsLowYAxis);
+        }
+        if cnc.get_pos().z < bounds.0.2 {
+            warnings.push(Warnings::OutOfBoundsLowZAxis);
+        }
+
+        if cnc.get_pos().x > bounds.1.0 {
+            warnings.push(Warnings::OutOfBoundsHighXAxis);
+        }
+        if cnc.get_pos().y > bounds.1.1 {
+            warnings.push(Warnings::OutOfBoundsHighYAxis);
+        }
+        if cnc.get_pos().z > bounds.1.2 {
+            warnings.push(Warnings::OutOfBoundsHighZAxis);
+        }
+
+        return warnings;
+    };
 
     let mut s = s.peekable();
     let mut variables_updates = Vec::new();
     let mut variables = HashMap::<char, f64>::new();
-    variables.insert('X', 0.0);
-    variables.insert('Y', 0.0);
-    variables.insert('Z', 0.0);
+    variables.insert('X', cutting_box.0.0);
+    variables.insert('Y', cutting_box.0.1);
+    variables.insert('Z', cutting_box.1.2);
     variables.insert('T', 1.0);
+
+    let mut spindle_on = false;
+    let mut line_index = 0;
     while let Some(c) = s.next() {
         if c == '\n' {
+            line_index += 1;
             let mut changed_pos = false;
             let mut changed_m = false;
             // let mut changed_g = false;
@@ -194,9 +264,11 @@ where T : Iterator<Item=char>
             if changed_m {
                 if variables[&'M'] == 6.0 {
                     cnc.set_tool((&variables[&'T']).round() as usize - 1);
+                    spindle_on = false;
                 }
             }
-            else if changed_pos && cnc.get_pos().z <= 0.0 && cnc.get_pos().z == variables[&'Z'] {
+            else if changed_pos && cnc.get_pos().z <= 0.0 &&
+                cnc.get_pos().z == variables[&'Z'] {
                 draw_line(
                     Point(cnc.get_pos().x, cnc.get_pos().y, cnc.get_pos().z),
                     Point(variables[&'X'], variables[&'Y'], variables[&'Z']),
@@ -213,10 +285,37 @@ where T : Iterator<Item=char>
                 }
             );
 
+            if !(
+                cnc.get_pos().x == safe_point.0 &&
+                cnc.get_pos().y == safe_point.1 &&
+                cnc.get_pos().z == safe_point.2
+            ) {
+                for warning in give_warnings(
+                    if spindle_on {
+                        cutting_box
+                    } else {
+                        non_cutting_box
+                    },
+                    &cnc,
+                )
+                {
+                    warnings.insert(warning);
+                }
+            }
+
             variables_updates.clear();
         } else if c.is_ascii_uppercase() {
             let value = to_f64(&mut s);
             variables.insert(c, value);
+            if c == 'M' && value == 5. {
+                spindle_on = false;
+            }
+            if c == 'M' && value == 3. {
+                spindle_on = true;
+            }
+            if c == 'M' && value == 4. {
+                spindle_on = true;
+            }
             variables_updates.push(c);
         } else if c == '(' {
             while let Some(n) = s.next() {
@@ -230,6 +329,8 @@ where T : Iterator<Item=char>
             // eprintln!("CANT RECOGNIZE: {}", c);
         }
     }
+
+    return warnings.into_iter().collect();
 }
 
 #[cfg(test)]

@@ -10,9 +10,12 @@ pub fn to_png<T, W : std::io::Write>(
     frame: (f64, f64, f64, f64),
     z_axis_of_cut: f64,
     tools: Vec<cncrouter::Tool>,
+    cutting_box: ((f64, f64, f64), (f64, f64, f64)),
+    non_cutting_box: ((f64, f64, f64), (f64, f64, f64)),
+    safe_point: (f64, f64, f64),
     s: &mut T,
     writer: &mut W
-) -> std::io::Result<()>
+) -> std::io::Result<Vec<running_gcode::Warnings>>
 where T : Iterator<Item=char>
 {
     let mut data: Vec<u8> = Vec::new();
@@ -22,8 +25,11 @@ where T : Iterator<Item=char>
         data.push(255);
     }
 
-    running_gcode::draw_path(
+    let warnings = running_gcode::draw_path(
         tools,
+        cutting_box,
+        non_cutting_box,
+        safe_point,
         s,
         |p1, p2, length, radius| {
             if p1.2 > 0.0 && p2.0 > 0.0 { return }
@@ -87,9 +93,7 @@ where T : Iterator<Item=char>
         image::ColorType::Rgb8,
     );
 
-    println!("{:?}", r);
-
-    Ok(())
+    Ok(warnings)
 }
 
 

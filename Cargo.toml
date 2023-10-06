@@ -1,3 +1,7 @@
+[lib]
+name = "cncsim"
+path = "src/lib.rs"
+
 [package]
 name = "cncsim"
 version = "0.1.0"
