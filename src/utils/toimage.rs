@@ -15,7 +15,7 @@ pub fn to_png<T, W : std::io::Write>(
     safe_point: (f64, f64, f64),
     s: &mut T,
     writer: &mut W
-) -> std::io::Result<Vec<running_gcode::Warnings>>
+) -> std::io::Result<(Vec<running_gcode::Warnings>, f64)>
 where T : Iterator<Item=char>
 {
     let mut data: Vec<u8> = Vec::new();
@@ -25,7 +25,7 @@ where T : Iterator<Item=char>
         data.push(255);
     }
 
-    let warnings = running_gcode::draw_path(
+    let (warnings, time) = running_gcode::draw_path(
         tools,
         cutting_box,
         non_cutting_box,
@@ -93,7 +93,7 @@ where T : Iterator<Item=char>
         image::ColorType::Rgb8,
     );
 
-    Ok(warnings)
+    Ok((warnings, time))
 }
 
 

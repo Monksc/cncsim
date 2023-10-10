@@ -82,6 +82,16 @@ impl Default for Coordinate {
     }
 }
 
+impl Coordinate {
+    pub fn distance_to(&self, point: &Coordinate) -> f64 {
+        let dx = point.x - self.x;
+        let dy = point.y - self.y;
+        let dz = point.z - self.z;
+
+        (dx*dx + dy*dy + dz*dz).sqrt()
+    }
+}
+
 // MARK: OptionCoordinate
 
 impl Default for OptionCoordinate {

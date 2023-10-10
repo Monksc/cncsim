@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
 
-#file='../ivy/text.nc'
-file='../gcode_rust_libary/file.nc'
+file='../ivy/text.nc'
 
 runcustomblockwidth() {
     cargo run -- --input "$file" --output image.png --blockwidth "$1" --blockheight "$2" --imgwidth $(($1 * $3)) --imgheight $(($2 * $3)) --fnvalue 100 && (xdg-open image.png &); (sleep 2 && clear)

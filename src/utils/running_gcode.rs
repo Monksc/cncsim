@@ -205,10 +205,11 @@ pub fn draw_path<T, F: FnMut(Point, Point, f64, f64)>(
     safe_point: (f64, f64, f64),
     s: &mut T,
     mut draw_line: F,
-) -> Vec<Warnings>
+) -> (Vec<Warnings>, f64)
 where T : Iterator<Item=char>
 {
     let mut warnings = std::collections::HashSet::new();
+    let mut time = 0.0;
 
     let mut cnc : cncrouter::CNCRouter = tools.into();
     let give_warnings = move |bounds: ((f64, f64, f64), (f64, f64, f64)), cnc : &cncrouter::CNCRouter| -> Vec<Warnings> {
@@ -244,12 +245,15 @@ where T : Iterator<Item=char>
     variables.insert('Y', cutting_box.0.1);
     variables.insert('Z', cutting_box.1.2);
     variables.insert('T', 1.0);
+    variables.insert('F', 120.0);
+    variables.insert('G', 0.0);
+    variables.insert('M', 0.0);
 
     let mut spindle_on = false;
-    let mut line_index = 0;
+    let mut is_fast_route = true;
+
     while let Some(c) = s.next() {
         if c == '\n' {
-            line_index += 1;
             let mut changed_pos = false;
             let mut changed_m = false;
             // let mut changed_g = false;
@@ -265,6 +269,7 @@ where T : Iterator<Item=char>
                 if variables[&'M'] == 6.0 {
                     cnc.set_tool((&variables[&'T']).round() as usize - 1);
                     spindle_on = false;
+                    time += 0.1;
                 }
             }
             else if changed_pos && cnc.get_pos().z <= 0.0 &&
@@ -275,6 +280,22 @@ where T : Iterator<Item=char>
                     cnc.get_tool().length,
                     cnc.get_tool().radius,
                 );
+            }
+
+            let distance = cnc.get_pos().distance_to(&cncrouter::Coordinate {
+                x: variables[&'X'],
+                y: variables[&'Y'],
+                z: variables[&'Z'],
+            });
+
+            time += distance * if is_fast_route {
+                1.0 / 2_000.0
+            } else {
+                1.0 / variables[&'F']
+            };
+
+            if distance > 0.0001 {
+                time += 1. / 9_000.;
             }
 
             cnc.set_pos(
@@ -310,11 +331,17 @@ where T : Iterator<Item=char>
             if c == 'M' && value == 5. {
                 spindle_on = false;
             }
-            if c == 'M' && value == 3. {
+            else if c == 'M' && value == 3. {
                 spindle_on = true;
             }
-            if c == 'M' && value == 4. {
+            else if c == 'M' && value == 4. {
                 spindle_on = true;
+            }
+            else if c == 'G' && value == 0. {
+                is_fast_route = true;
+            }
+            else if c == 'G' && value == 1. {
+                is_fast_route = false;
             }
             variables_updates.push(c);
         } else if c == '(' {
@@ -330,7 +357,7 @@ where T : Iterator<Item=char>
         }
     }
 
-    return warnings.into_iter().collect();
+    return (warnings.into_iter().collect(), time);
 }
 
 #[cfg(test)]

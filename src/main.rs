@@ -114,8 +114,9 @@ fn main() -> io::Result<()> {
             get_tools(),
             ((0.0, 0.0, -1.0), (13.0, 20.0, 5.0)),
             ((0.0, 0.0, -1.0), (20.0, 20.0, 10.0)),
-            &mut contents.chars(), &mut file)
-            .expect("Could not read template or write to temporary file.");
+            (0.0, 0.0, 10.0),
+            &mut contents.chars(), &mut file
+        ).expect("Could not read template or write to temporary file.");
 
         let file_path = path.into_os_string()
             .into_string()
@@ -140,16 +141,25 @@ fn main() -> io::Result<()> {
         print!("STDERR:\n{}", stderr);
     } else {
         let mut output = fs::File::create(args.output)?;
-        utils::toimage::to_png(
+        if let Ok((messages, time)) = utils::toimage::to_png(
             (args.imgwidth as u32, args.imgheight as u32),
             (0.0, 0.0, args.blockwidth, args.blockheight),
             0.0,
             get_tools(),
             ((0.0, 0.0, -1.0), (13.0, 20.0, 5.0)),
             ((0.0, 0.0, -1.0), (20.0, 20.0, 10.0)),
+            (0.0, 0.0, 10.0),
             &mut contents.chars(),
             &mut output,
-        );
+        ) {
+            eprintln!("{}", messages
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()
+                .join("\n")
+            );
+            eprintln!("Took {:.2} minutes", time);
+        }
     }
 
     Ok(())
