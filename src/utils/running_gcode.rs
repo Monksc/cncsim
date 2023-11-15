@@ -272,7 +272,7 @@ where T : Iterator<Item=char>
                     time += 0.1;
                 }
             }
-            else if changed_pos && cnc.get_pos().z <= 0.0 &&
+            else if changed_pos && cnc.get_pos().z < 0.0 &&
                 cnc.get_pos().z == variables[&'Z'] {
                 draw_line(
                     Point(cnc.get_pos().x, cnc.get_pos().y, cnc.get_pos().z),
@@ -282,21 +282,34 @@ where T : Iterator<Item=char>
                 );
             }
 
-            let distance = cnc.get_pos().distance_to(&cncrouter::Coordinate {
-                x: variables[&'X'],
-                y: variables[&'Y'],
-                z: variables[&'Z'],
-            });
-
-            time += distance * if is_fast_route {
-                1.0 / 2_000.0
+            time += if is_fast_route {
+                let mut max_distance = variables[&'X'];
+                if max_distance < variables[&'Y'] {
+                    max_distance = variables[&'Y'];
+                }
+                if max_distance < variables[&'Z'] {
+                    max_distance = variables[&'Z'];
+                }
+                max_distance * (1.0 / 2_000.0) +
+                    if max_distance > 0.0001 {
+                        1. / 9_000.
+                    } else {
+                        0.0
+                    }
             } else {
-                1.0 / variables[&'F']
-            };
+                let distance = cnc.get_pos().distance_to(&cncrouter::Coordinate {
+                    x: variables[&'X'],
+                    y: variables[&'Y'],
+                    z: variables[&'Z'],
+                });
 
-            if distance > 0.0001 {
-                time += 1. / 9_000.;
-            }
+                distance * (1.0 / variables[&'F']) + 
+                    if distance > 0.0001 {
+                        1. / 9_000.
+                    } else {
+                        0.0
+                    }
+            };
 
             cnc.set_pos(
                 &cncrouter::OptionCoordinate {
