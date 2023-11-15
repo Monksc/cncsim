@@ -290,7 +290,7 @@ where T : Iterator<Item=char>
                 if max_distance < variables[&'Z'] {
                     max_distance = variables[&'Z'];
                 }
-                max_distance * (1.0 / 2_000.0) +
+                max_distance * (1.0 / 1_500.0) +
                     if max_distance > 0.0001 {
                         1. / 9_000.
                     } else {
