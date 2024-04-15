@@ -9,6 +9,7 @@ pub struct CNCRouter {
 pub struct Tool {
     pub radius: f64,
     pub length: f64,
+    pub color: (f64, f64, f64),
 }
 
 pub struct Coordinate {
@@ -22,7 +23,6 @@ pub struct OptionCoordinate {
     pub y: Option<f64>,
     pub z: Option<f64>,
 }
-
 
 // MARK: CNCRouter
 
@@ -66,6 +66,7 @@ impl Default for Tool {
         Self {
             radius: 0.3,
             length: 0.5,
+            color: (1.0, 1.0, 1.0),
         }
     }
 }
@@ -88,7 +89,7 @@ impl Coordinate {
         let dy = point.y - self.y;
         let dz = point.z - self.z;
 
-        (dx*dx + dy*dy + dz*dz).sqrt()
+        (dx * dx + dy * dy + dz * dz).sqrt()
     }
 }
 
@@ -103,4 +104,3 @@ impl Default for OptionCoordinate {
         }
     }
 }
-

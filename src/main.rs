@@ -12,20 +12,20 @@ use rand::random;
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-   #[clap(short, long, value_parser)]
-   input: String,
-   #[clap(short, long, value_parser)]
-   output: String,
-   #[clap(long, value_parser)]
-   blockwidth: f64,
-   #[clap(long, value_parser)]
-   blockheight: f64,
-   #[clap(long, value_parser)]
-   imgwidth: u64,
-   #[clap(long, value_parser)]
-   imgheight: u64,
-   #[clap(long, value_parser)]
-   fnvalue: u64,
+    #[clap(short, long, value_parser)]
+    input: String,
+    #[clap(short, long, value_parser)]
+    output: String,
+    #[clap(long, value_parser)]
+    blockwidth: f64,
+    #[clap(long, value_parser)]
+    blockheight: f64,
+    #[clap(long, value_parser)]
+    imgwidth: u64,
+    #[clap(long, value_parser)]
+    imgheight: u64,
+    #[clap(long, value_parser)]
+    fnvalue: u64,
 }
 
 fn random_string() -> String {
@@ -39,11 +39,9 @@ fn random_string() -> String {
     return s;
 }
 
-fn get_temp_file(extension: &str) ->
-    std::io::Result<(std::fs::File, std::path::PathBuf)> {
+fn get_temp_file(extension: &str) -> std::io::Result<(std::fs::File, std::path::PathBuf)> {
     let path = std::env::temp_dir().join(random_string() + extension);
-    let file = std::fs::File::create(&path)
-        .expect("Could not create a file");
+    let file = std::fs::File::create(&path).expect("Could not create a file");
 
     Ok((file, path))
 }
@@ -65,47 +63,65 @@ fn get_tools() -> Vec<utils::cncrouter::Tool> {
         // },
 
         // For real
-        utils::cncrouter::Tool { // 1
+        utils::cncrouter::Tool {
+            // 1
             radius: 0.0,
             length: 1.0,
+            color: (1.0, 1.0, 1.0),
         },
-        utils::cncrouter::Tool { // 2
-            radius: 0.02/2.0,
+        utils::cncrouter::Tool {
+            // 2
+            radius: 0.02 / 2.0,
             length: 1.0,
+            color: (1.0, 1.0, 1.0),
         },
-        utils::cncrouter::Tool { // 3
-            radius: 0.125/2.0,
+        utils::cncrouter::Tool {
+            // 3
+            radius: 0.125 / 2.0,
             length: 1.0,
+            color: (1.0, 1.0, 1.0),
         },
-        utils::cncrouter::Tool { // 4
-            radius: 0.25/2.0,
+        utils::cncrouter::Tool {
+            // 4
+            radius: 0.25 / 2.0,
             length: 1.0,
+            color: (1.0, 1.0, 1.0),
         },
-        utils::cncrouter::Tool { // 5
-            radius: 0.0625/2.0,
+        utils::cncrouter::Tool {
+            // 5
+            radius: 0.0625 / 2.0,
             length: 1.0,
+            color: (1.0, 1.0, 1.0),
         },
-        utils::cncrouter::Tool { // 6
-            radius: 0.02/2.0,
+        utils::cncrouter::Tool {
+            // 6
+            radius: 0.02 / 2.0,
             length: 1.0,
+            color: (1.0, 0.0, 0.0),
         },
-        utils::cncrouter::Tool { // 7
-            radius: 0.005/2.0,
+        utils::cncrouter::Tool {
+            // 7
+            // radius: 0.005 / 2.0,
+            radius: 0.01,
             length: 1.0,
+            color: (1.0, 1.0, 0.0),
+        },
+        utils::cncrouter::Tool {
+            // 8
+            radius: 0.5 / 2.0,
+            length: 1.0,
+            color: (1.0, 1.0, 1.0),
         },
     ]
 }
 
 fn main() -> io::Result<()> {
-
     let args = Args::parse();
 
-    let contents = fs::read_to_string(args.input)
-        .expect("Should have been able to read the file");
+    let contents = fs::read_to_string(args.input).expect("Should have been able to read the file");
 
     if false {
-        let (mut file, path) = get_temp_file(".scad")
-            .expect("Could not create temporary file.");
+        let (mut file, path) = get_temp_file(".scad").expect("Could not create temporary file.");
 
         utils::tostl::to_scad(
             args.fnvalue,
@@ -115,10 +131,13 @@ fn main() -> io::Result<()> {
             ((0.0, 0.0, -1.0), (13.0, 20.0, 5.0)),
             ((0.0, 0.0, -1.0), (20.0, 20.0, 10.0)),
             (0.0, 0.0, 10.0),
-            &mut contents.chars(), &mut file
-        ).expect("Could not read template or write to temporary file.");
+            &mut contents.chars(),
+            &mut file,
+        )
+        .expect("Could not read template or write to temporary file.");
 
-        let file_path = path.into_os_string()
+        let file_path = path
+            .into_os_string()
             .into_string()
             .expect("Path could not be found.");
 
@@ -152,11 +171,13 @@ fn main() -> io::Result<()> {
             &mut contents.chars(),
             &mut output,
         ) {
-            eprintln!("{}", messages
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>()
-                .join("\n")
+            eprintln!(
+                "{}",
+                messages
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join("\n")
             );
             eprintln!("Took {:.2} minutes", time);
         }

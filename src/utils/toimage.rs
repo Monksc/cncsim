@@ -4,8 +4,7 @@ use crate::utils::running_gcode;
 use algorithms;
 use std::fs;
 
-
-pub fn to_png<T, W : std::io::Write>(
+pub fn to_png<T, W: std::io::Write>(
     image_size: (u32, u32),
     frame: (f64, f64, f64, f64),
     z_axis_of_cut: f64,
@@ -14,15 +13,18 @@ pub fn to_png<T, W : std::io::Write>(
     non_cutting_box: ((f64, f64, f64), (f64, f64, f64)),
     safe_point: (f64, f64, f64),
     s: &mut T,
-    writer: &mut W
+    writer: &mut W,
 ) -> std::io::Result<(Vec<running_gcode::Warnings>, f64)>
-where T : Iterator<Item=char>
+where
+    T: Iterator<Item = char>,
 {
     let mut data: Vec<u8> = Vec::new();
+    let mut intensity: Vec<u8> = Vec::new();
     for _ in 0..(image_size.0 * image_size.1) {
         data.push(0);
         data.push(0);
         data.push(255);
+        intensity.push(0);
     }
 
     let (warnings, time) = running_gcode::draw_path(
@@ -31,14 +33,16 @@ where T : Iterator<Item=char>
         non_cutting_box,
         safe_point,
         s,
-        |p1, p2, length, radius| {
-            if p1.2 > 0.0 && p2.0 > 0.0 { return }
+        |p1, p2, length, radius, color| {
+            if p1.2 > 0.0 && p2.0 > 0.0 {
+                return;
+            }
 
             let convert = |min: f64, max: f64, value: f64, new_size: u32| {
-                (new_size as f64 * (((value - min) / (max - min)))) as u32
+                (new_size as f64 * ((value - min) / (max - min))) as u32
             };
             let reverse_convert = |min: f64, max: f64, value: u32, new_size: u32| {
-                min + (value as f64 / new_size as f64 ) * (max - min)
+                min + (value as f64 / new_size as f64) * (max - min)
             };
             let x = convert(frame.0, frame.2, p1.0, image_size.0);
             let y = convert(frame.1, frame.3, p1.1, image_size.1);
@@ -48,9 +52,9 @@ where T : Iterator<Item=char>
             algorithms::bfs(
                 (x, y),
                 |(x, y)| {
-                    let mut r : Vec<(u32, u32)> = Vec::new();
+                    let mut r: Vec<(u32, u32)> = Vec::new();
 
-                    for (dx, dy) in vec![(1,0), (0,1), (-1,0), (0,-1)] {
+                    for (dx, dy) in vec![(1, 0), (0, 1), (-1, 0), (0, -1)] {
                         let x = x as i64 + dx;
                         let y = y as i64 + dy;
 
@@ -63,16 +67,20 @@ where T : Iterator<Item=char>
 
                         let distance = line.distance_to(running_gcode::Point(xf, yf, 0.0));
 
-                        if xf < frame.2 && xf > frame.0 &&
-                            yf < frame.3 && xf > frame.1 &&
-                                 distance <= radius {
+                        if xf < frame.2
+                            && xf > frame.0
+                            && yf < frame.3
+                            && xf > frame.1
+                            && distance <= radius
+                        {
                             r.push((x as u32, y as u32));
                             let position = (image_size.1 - y as u32) * image_size.0 + x as u32;
-                            let new_value = (255.0 * (1.0-(distance / radius).powf(2.0))) as u8;
-                            if new_value > data[position as usize * 3] {
-                                data[position as usize * 3+0] = new_value;
-                                data[position as usize * 3+1] = new_value;
-                                data[position as usize * 3+2] = new_value;
+                            let new_value = 255.0 * (1.0 - (distance / radius).powf(2.0));
+                            if new_value > intensity[position as usize] as f64 {
+                                data[position as usize * 3 + 0] = (new_value * color.0) as u8;
+                                data[position as usize * 3 + 1] = (new_value * color.1) as u8;
+                                data[position as usize * 3 + 2] = (new_value * color.2) as u8;
+                                intensity[position as usize] = new_value as u8;
                             }
                         }
                     }
@@ -81,21 +89,15 @@ where T : Iterator<Item=char>
                 },
                 |(x, y)| false,
             );
-        }
+        },
     );
 
     let mut img = image::codecs::png::PngEncoder::new(writer);
 
-    let r = img.encode(
-        &data,
-        image_size.0,
-        image_size.1,
-        image::ColorType::Rgb8,
-    );
+    let r = img.encode(&data, image_size.0, image_size.1, image::ColorType::Rgb8);
 
     Ok((warnings, time))
 }
-
 
 fn float_loop(start: f64, threshold: f64, step_size: f64) -> impl Iterator<Item = f64> {
     std::iter::successors(Some(start), move |&prev| {
@@ -104,10 +106,8 @@ fn float_loop(start: f64, threshold: f64, step_size: f64) -> impl Iterator<Item 
             None
         } else if next < threshold {
             Some(next)
-        }
-        else {
+        } else {
             Some(threshold)
         }
     })
 }
-
